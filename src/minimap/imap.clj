@@ -11,14 +11,14 @@
         :append true))
 
 (defn do-command
-  "Executes an IMAP command in the context of a session. 
-  
+  "Executes an IMAP command in the context of a session.
+
   - If successful, returns a future on a list of IMAP response lines.
   - Otherwise, set :last-error in the session and returns a future on nil.
-  
+
   If the session has an error in the previous command, just pass through
   (this enables to chain commands without worrying about error at each step).
-  
+
   Modifies the value of the session referenced by session-ref."
   [session-ref command]
   (let [{:keys [w r idx last-error] :as session} (deref session-ref)]
@@ -38,15 +38,15 @@
                  resp []]
             (log :server line)
             ; it can be either the end "a00001 OK bla bla" or a response "* ..."
-            (cond 
+            (cond
               ; OK end of response
               (re-find (re-pattern (str "^" id " OK")) line)
               (response resp nil)
-                
+
               ; BAD end of response: everything with id but no OK
               (re-find (re-pattern (str "^" id)) line)
               (response nil (format "IMAP error in command %s: %s" command line))
-                
+
               ; response line (starts with *)
               (.startsWith line "*")
               (if-let [[_ g] (re-find #"\{(\d+)\}$" line)]
@@ -57,13 +57,13 @@
                   (loop [i 0]
                     ;(log :server (format "Read %d bytes out of %d" i size))
                     (when (< i size)
-                      (recur (+ i (.read r b i (- size i)))))) 
-                  ; 
+                      (recur (+ i (.read r b i (- size i))))))
+                  ;
                   (recur (.readLine r) (-> resp (conj [line, b]))))
-                
+
                 ; self-contained response line, no data following
                 (recur (.readLine r) (conj resp [line])))
-                
+
               ; continuation request (starts with +)
               ; typically used during authentication, but not on Gmail
               ; for Gmail, just reply with an empty command and continue reading
@@ -71,13 +71,13 @@
               (do
                 (.write w "\r\n" 0 2) (log :client "") (.flush w)
                 (recur (.readLine r) (conj resp [line])))
-              
+
               ; else: it's more of the current response (like after literals)
               :else
               (recur (.readLine r) (conj (pop resp) (conj (last resp) line)))))))
-              
+
         (future nil)))) ; error pass-through: leave session untouched
-          
+
 (defn search
   "Returns a list of uids (strings)"
   [sess {:keys [gmail] :as query}]
@@ -89,7 +89,7 @@
 
 (defn fetch-headers [sess uids]
   (let [gmail-ext (if (:gmail @sess) "X-GM-MSGID X-GM-THRID " "")
-        resp (deref (do-command sess (format "fetch %s (body.peek[header] %sFLAGS BODYSTRUCTURE)" 
+        resp (deref (do-command sess (format "fetch %s (body.peek[header] %sFLAGS BODYSTRUCTURE)"
                                              (clojure.string/join "," uids) gmail-ext)))]
     (map parse/parse-fetch resp)))
 
@@ -105,7 +105,7 @@
         text (case encoding
                "base64" (String. (codec/base64-decode (String. data)) charset)
                "quoted-printable" (h/decode-quopri (String. data) charset)
-               (String. (.getBytes (String. data)) charset))] 
+               (String. (.getBytes (String. data)) charset))]
     text))
 
 (defn connect

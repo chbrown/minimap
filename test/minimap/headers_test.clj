@@ -39,7 +39,7 @@
            (decode-date "Sun, 17 Aug 2014 06:38:15 -0700")))
     (is (= (t/date-time 2014 6 30 21 05 56)
            (decode-date "Mon, 30 Jun 2014 21:05:56 +0000 (GMT+00:00)"))) ; putain Apple!
-    (is (= (t/date-time 2014 8 15 10 50 33) 
+    (is (= (t/date-time 2014 8 15 10 50 33)
            (decode-date "Fri, 15 Aug 2014 10:50:33 +0000 (UTC)")))) ; LinkedIn emails error!
   (testing "parse"
     (is (= (list ["Subject" "éléonore est fsmf jsklfm sjfkl fjklf jkjékj jéé éjk lj mjd kfmjsf sdlmfj qsmflj fljm léjkél jékléjékl "])

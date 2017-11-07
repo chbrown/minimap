@@ -25,7 +25,7 @@
   :gmail    a X-GM-RAW Gmail search query
   :max      the maximum number of results (note that IMAP does not support this,
             it's just a filter we apply after initial UIDs search)"
-            
+
   [session {:keys [max] :as query}]
   (->> (imap/search session query)
        reverse ; IMAP (Gmail at least) sends older messages first
@@ -43,7 +43,7 @@
                 (let [m (imap/fetch-body-part session (:uid msg) plain-path)]
                   (assoc msg :plain (string/replace m #"\r\n" "\n")))
                 msg)
-          msg (if (and html-path (or (= :html parts) 
+          msg (if (and html-path (or (= :html parts)
                                      (and (= :plain-or-html parts) (nil? (:plain msg)))))
                 (let [m (imap/fetch-body-part session (:uid msg) html-path)]
                   (assoc msg :html m))

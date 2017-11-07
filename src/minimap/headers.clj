@@ -56,11 +56,11 @@
           ; empty line => end of headers. if line is nil, they forgot the empty line but that's OK.
           (or (= "" line) (nil? line))
           acc
-          
+
           ; first char is space or tab, this line is a folding continuation
   	      (#{\space \tab} (first line))
   	      (recur ls (cons (str current " " (string/trim line)) cs))
-         
+
   	      ; new header field + value
           :else
   	      (recur ls (cons line acc))))
@@ -104,7 +104,7 @@ email = ATOM '@' ATOM ('.' ATOM)*
 (* Phrases like 'Alex Lebrun' in 'Alex Lebrun <alex@wit.ai>' *)
 <PHRASE> = #'[^<,\"]+'
 
-white = #' *'                                
+white = #' *'
 "))
 
 (defn decode-address [raw]
