@@ -1,3 +1,3 @@
 (ns minimap.core-test
-  (:use clojure.test
-        minimap.core))
+  (:require [clojure.test :refer [deftest testing is]]
+            [minimap.core]))

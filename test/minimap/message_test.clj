@@ -1,6 +1,6 @@
 (ns minimap.message-test
-  (:use clojure.test
-        minimap.message))
+  (:require [clojure.test :refer [deftest testing is]]
+            [minimap.message]))
 
 (def msg {:bodystructure '({:encoding "7bit"
                             :charset "utf-8"

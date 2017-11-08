@@ -1,7 +1,7 @@
 (ns minimap.core
-  (:require [minimap.imap :as imap]
-            [minimap.message :as msg]
-            [clojure.string :as string]))
+  (:require [clojure.string :as str]
+            [minimap.imap :as imap]
+            [minimap.message :as msg]))
 
 (defn login
   "Returns an imap session connected to the given account.
@@ -15,7 +15,7 @@
   Session is mutable, since anyway imap is a super stateful protocol"
   [server username token]
   (let [session (imap/connect server)]
-    (imap/authenticate username token)))
+    (imap/authenticate session username token)))
 
 (defn search
   "Returns a list of messages with their headers and basic information,
@@ -28,8 +28,7 @@
   (let [; IMAP (Gmail at least) sends older messages first
         uids (cond->> (reverse (imap/search session query))
                max (take max))]
-    (->> (imap/fetch-headers session uids)
-         (map msg/assoc-common))))
+    (map msg/assoc-common (imap/fetch-headers session uids))))
 
 (defn fetch
   "Fetches the first text/plain and/or text/html parts of the body of the msg.
@@ -39,7 +38,7 @@
   (let [[plain-path html-path] (msg/text-parts msg)]
     (let [msg (if (and plain-path (#{:plain :plain-or-html} parts))
                 (let [m (imap/fetch-body-part session (:uid msg) plain-path)]
-                  (assoc msg :plain (string/replace m #"\r\n" "\n")))
+                  (assoc msg :plain (str/replace m #"\r\n" "\n")))
                 msg)
           msg (if (and html-path (or (= :html parts)
                                      (and (= :plain-or-html parts) (nil? (:plain msg)))))
@@ -57,8 +56,8 @@
 (defn go
   [pwd]
   (let [session (login :gmail "a@lxbrun.com" pwd)
-        msgs (->> (search session {:gmail "after:2014/9/1" :max 10})
-                  (map #(fetch session :plain-or-html %)))
+        msgs (map #(fetch session :plain-or-html %)
+                  (search session {:gmail "after:2014/9/1" :max 10}))
         subjects (map :from msgs)]
     #_(logout session)
     subjects))

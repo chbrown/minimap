@@ -1,6 +1,5 @@
 (ns minimap.base64
-  (:require [byte-transforms :as bt])
-  (:import [java.nio.charset Charset]))
+  (:require [byte-transforms :as bt]))
 
 (defn decode-string
   "Take a Base64-encoded string, decode it into bytes, and return another string.

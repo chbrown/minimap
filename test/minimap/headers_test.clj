@@ -1,6 +1,6 @@
 (ns minimap.headers-test
-  (:use clojure.test
-        minimap.headers)
+  (:require [clojure.test :refer [deftest testing is]]
+            [minimap.headers :refer [decode-rfc2047 decode-quopri unfold namevalue decode-date parse]])
   (:import (java.time ZonedDateTime ZoneOffset)))
 
 (deftest encoding-tests

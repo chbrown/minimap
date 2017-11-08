@@ -1,5 +1,5 @@
 (ns minimap.message
-  (:require [clojure.string :as string]
+  (:require [clojure.string :as str]
             [clojure.data.json :as json :refer [JSONWriter]]
             [clojure.java.io :as io])
   (:import (java.time ZonedDateTime)
@@ -31,27 +31,28 @@
   (-> msg
       (into (->> (:headers msg)
                  (filter (comp common-headers first))
-                 (map (fn [[k v]] [((comp keyword string/lower-case) k) v]))))
+                 (map (fn [[k v]] [((comp keyword str/lower-case) k) v]))))
       (cond-> ((set (:flags msg)) "\\Flagged") (assoc :flagged true))
       (cond-> ((set (:flags msg)) "\\Answered") (assoc :answered true))))
 
 (defn store
   [msg]
-  (spit (format "messages/%s.json" (:msg-id msg))
-        (json/write-str msg))
+  (with-open [writer (io/writer (format "messages/%s.json" (:msg-id msg)))]
+    (json/write msg writer))
   msg)
 
 (defn store-meta
   [msg-id meta]
-  (spit (format "meta/%s.json" msg-id)
-        (json/write-str meta)))
+  (with-open [writer (io/writer (format "meta/%s.json" msg-id))]
+    (json/write meta writer)))
 
 (defn retrieve-obj
   [message-or-meta msg-id]
-  (let [filename (format "%s/%s.json" message-or-meta msg-id)]
-    (when (.exists (io/as-file filename))
-      (-> (slurp filename)
-          (json/read-str :key-fn keyword)))))
+  (let [filename (format "%s/%s.json" message-or-meta msg-id)
+        file (io/file filename)]
+    (when (.exists file)
+      (with-open [reader (io/reader file)]
+        (json/read reader :key-fn keyword)))))
 
 (defn update-meta
   [msg-id pred]

@@ -1,5 +1,5 @@
 (ns minimap.headers
-  (:require [clojure.string :as string]
+  (:require [clojure.string :as str]
             [minimap.base64 :as base64]
             [instaparse.core :as insta])
   (:import (java.time ZonedDateTime)
@@ -34,7 +34,7 @@
 (defn decode-rfc2047
   "Decodes non-ascii headers values according to RFC2047. There can be several encoded words in a single string."
   [possibly-encoded]
-  (string/replace
+  (str/replace
    possibly-encoded
    #"=\?([^?]+)\?([BbQq])\?([^\? ]*)\?="
    (fn [[_ charset encoding data]]
@@ -45,25 +45,25 @@
 (defn unfold
   "Unfold headers from raw text. Returns a list of header lines"
   [raw]
-  {:pre [string? raw]}
-  (-> (loop [[line & ls] (clojure.string/split raw #"\r\n")
-             [current & cs :as acc] nil]
-        (cond
+  {:pre [(string? raw)]}
+  (reverse
+   (loop [[line & ls] (str/split raw #"\r\n")
+          [current & cs :as acc] nil]
+     (cond
           ; empty line => end of headers. if line is nil, they forgot the empty line but that's OK.
-          (or (= "" line) (nil? line)) acc
+       (or (= "" line) (nil? line)) acc
           ; first char is space or tab, this line is a folding continuation
-          (#{\space \tab} (first line))
-          (recur ls (cons (str current " " (string/trim line)) cs))
+       (#{\space \tab} (first line))
+       (recur ls (cons (str current " " (str/trim line)) cs))
           ; new header field + value
-          :else (recur ls (cons line acc))))
-      reverse))
+       :else (recur ls (cons line acc))))))
 
 (defn namevalue
   [^String headerline]
   (let [idx (.indexOf headerline ":")]
     (when (= -1 idx)
       (throw (ex-info "Weird header" {:line headerline})))
-    [(subs headerline 0 idx) (string/trim (subs headerline (inc idx)))]))
+    [(subs headerline 0 idx) (str/trim (subs headerline (inc idx)))]))
 
 (def time-formatters
   (map #(DateTimeFormatter/ofPattern %) ["EEE, dd MMM yyyy HH:mm:ss Z"
@@ -73,7 +73,7 @@
 (defn decode-date
   "RFC822"
   [s]
-  (let [clean (string/replace s #" \([^\)]+\)" "")
+  (let [clean (str/replace s #" \([^\)]+\)" "")
         date (some #(try (ZonedDateTime/parse clean %)
                          (catch Exception e nil)) time-formatters)]
     date))
@@ -109,7 +109,7 @@ white = #' *'
       ; successful parse
       #_(prn tree)
       (map (fn [address] (into {} (for [[tag & more] (rest address)]
-                                    [tag (apply str more)])))
+                                    [tag (str/join more)])))
            (rest tree)) ; first item is :S
       (prn "ERROR" raw))))
 

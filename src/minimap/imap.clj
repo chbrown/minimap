@@ -1,5 +1,6 @@
 (ns minimap.imap
-  (:require [minimap.parse :as parse]
+  (:require [clojure.string :as str]
+            [minimap.parse :as parse]
             [minimap.headers :as h]
             [minimap.base64 :as base64])
   (:import [java.io BufferedWriter BufferedReader OutputStreamWriter InputStreamReader]
@@ -60,7 +61,7 @@
                     (when (< i size)
                       (recur (+ i (.read r b i (- size i))))))
                   ;
-                  (recur (.readLine r) (-> resp (conj [line, b]))))
+                  (recur (.readLine r) (conj resp [line, b])))
 
                 ; self-contained response line, no data following
                 (recur (.readLine r) (conj resp [line])))
@@ -85,13 +86,13 @@
   (let [_    (deref (do-command sess "select \"[Gmail]/All Mail\""))
         resp (deref (do-command sess (if gmail (format "SEARCH X-GM-RAW \"%s\"" gmail) "SEARCH UNSEEN")))]
     (when resp
-      (drop 2 (-> resp first first (clojure.string/split #" "))))))
+      (drop 2 (-> resp first first (str/split #" "))))))
 
 (defn fetch-headers
   [sess uids]
   (let [gmail-ext (if (:gmail @sess) "X-GM-MSGID X-GM-THRID " "")
         resp (deref (do-command sess (format "fetch %s (body.peek[header] %sFLAGS BODYSTRUCTURE)"
-                                             (clojure.string/join "," uids) gmail-ext)))]
+                                             (str/join "," uids) gmail-ext)))]
     (map parse/parse-fetch resp)))
 
 (defn fetch-body-part

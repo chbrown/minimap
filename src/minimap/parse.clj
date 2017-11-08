@@ -1,6 +1,6 @@
 (ns minimap.parse
-  (:require [minimap.headers :as h]
-            [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [minimap.headers :as h]))
 
 (defn read-from
   [[token & more] acc]
@@ -14,9 +14,8 @@
 (defn simple-bodystructure
   [[text plain charset _ _ encoding]]
   (let [clean #(-> % str/lower-case (str/replace "\"" ""))
-        charset-name (if (vector? charset)
-                       (-> charset second clean)
-                       nil)] ; sometime we have NIL instead of ["CHARSET" "UTF-8"]
+        charset-name (when (vector? charset)
+                       (-> charset second clean))] ; sometime we have NIL instead of ["CHARSET" "UTF-8"]
     {:content-type (format "%s/%s" (clean text) (clean plain))
      :charset charset-name
      :encoding (clean encoding)}))
@@ -42,7 +41,7 @@
     (= "BODYSTRUCTURE" field) (recur more (assoc msg :bodystructure (walk-bodystructure content [])))
     (= "X-GM-THRID" field)    (recur more (assoc msg :thread-id content))
     (= "X-GM-MSGID" field)    (recur more (assoc msg :msg-id content))
-    (= "BODY[HEADER]" field)  (recur (next more) (assoc msg :headers (h/parse (apply str (first more)))))
+    (= "BODY[HEADER]" field)  (recur (next more) (assoc msg :headers (h/parse (str/join (first more)))))
     (= "FLAGS" field)         (recur more (assoc msg :flags content))
     (re-find #"BODY\[([\d\.]+)\]" field)
     (let [[_ path] (re-find #"BODY\[([\d\.]+)\]" field)]
