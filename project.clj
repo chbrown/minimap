@@ -8,5 +8,4 @@
                  [byte-transforms "0.1.4"]
                  [cheshire "5.3.1"]
                  [clj-time "0.8.0"]
-                 [instaparse "1.3.3"]
-                 [prismatic/plumbing "0.1.0"]])
+                 [instaparse "1.3.3"]])

@@ -1,5 +1,4 @@
 (ns minimap.message
-  (:use [plumbing.core])
   (:require [clojure.string :as string]
             [cheshire.core :as j]
             [cheshire.generate :as g]
@@ -30,8 +29,8 @@
       (into (->> (:headers msg)
                  (filter (comp common-headers first))
                  (map (fn [[k v]] [((comp keyword string/lower-case) k) v]))))
-      (?> ((set (:flags msg)) "\\Flagged") assoc :flagged true)
-      (?> ((set (:flags msg)) "\\Answered") assoc :answered true)))
+      (cond-> ((set (:flags msg)) "\\Flagged") (assoc :flagged true))
+      (cond-> ((set (:flags msg)) "\\Answered") (assoc :answered true))))
 
 (defn store
   [msg]

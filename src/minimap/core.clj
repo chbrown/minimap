@@ -1,5 +1,4 @@
 (ns minimap.core
-  (:use [plumbing.core])
   (:require [minimap.imap :as imap]
             [minimap.message :as msg]
             [clojure.string :as string]))
@@ -25,13 +24,12 @@
   :gmail    a X-GM-RAW Gmail search query
   :max      the maximum number of results (note that IMAP does not support this,
             it's just a filter we apply after initial UIDs search)"
-
   [session {:keys [max] :as query}]
-  (->> (imap/search session query)
-       reverse ; IMAP (Gmail at least) sends older messages first
-       (?>> max take max)
-       (imap/fetch-headers session)
-       (map msg/assoc-common)))
+  (let [; IMAP (Gmail at least) sends older messages first
+        uids (cond->> (reverse (imap/search session query))
+               max (take max))]
+    (->> (imap/fetch-headers session uids)
+         (map msg/assoc-common))))
 
 (defn fetch
   "Fetches the first text/plain and/or text/html parts of the body of the msg.
