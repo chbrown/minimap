@@ -11,9 +11,9 @@
    (let [decoded-bytes (bt/decode (.getBytes encoded) :base64)]
      (String. ^bytes decoded-bytes charset))))
 
-(defn encode-bytes ^bytes
-  [^bytes raw]
+(defn encode-bytes
   "Take some bytes, encode them as Base64, and return another byte array."
+  ^bytes [^bytes raw]
   (bt/encode raw :base64))
 
 (defn encode-string
