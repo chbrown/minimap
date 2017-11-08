@@ -3,8 +3,7 @@
   :url "https://github.com/ar7hur/minimap"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :profiles {:dev {:dependencies [[midje "1.6.3"]]
-                   :source-paths ["dev"]}}
+  :profiles {:dev {:source-paths ["dev"]}}
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [byte-transforms "0.1.4"]
                  [cheshire "5.3.1"]

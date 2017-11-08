@@ -6,4 +6,17 @@
            (char-array "Subject: hello")
            ")"])
 
-(prn (parse-fetch stub))
+(deftest parse-tests
+  (testing "parse-fetch results"
+    (is (= {:headers '(["Subject" "hello"])
+            :bodystructure '({:encoding "7bit"
+                              :charset "utf-8"
+                              :content-type "text/plain"
+                              :path "1"}
+                             {:encoding "7bit"
+                              :charset "utf-8"
+                              :content-type "text/html"
+                              :path "2"})
+            :thread-id "1476168181745142452"
+            :uid "52406"}
+           (parse-fetch stub)))))
