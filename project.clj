@@ -7,5 +7,4 @@
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.clojure/data.json "0.2.6"]
                  [byte-transforms "0.1.4"]
-                 [clj-time "0.8.0"]
                  [instaparse "1.3.3"]])

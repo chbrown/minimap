@@ -1,7 +1,7 @@
 (ns minimap.headers-test
   (:use clojure.test
         minimap.headers)
-  (:require [clj-time.core :as t]))
+  (:import (java.time ZonedDateTime ZoneOffset)))
 
 (deftest encoding-tests
   (testing "base64 and Q encoded subject"
@@ -35,12 +35,14 @@
     (is (= ["foo" "bar"]
            (namevalue "foo: bar"))))
   (testing "date"
-    (is (= (t/date-time 2014 8 17 13 38 15)
-           (decode-date "Sun, 17 Aug 2014 06:38:15 -0700")))
-    (is (= (t/date-time 2014 6 30 21 05 56)
-           (decode-date "Mon, 30 Jun 2014 21:05:56 +0000 (GMT+00:00)"))) ; putain Apple!
-    (is (= (t/date-time 2014 8 15 10 50 33)
-           (decode-date "Fri, 15 Aug 2014 10:50:33 +0000 (UTC)")))) ; LinkedIn emails error!
+    ; java.time.chrono.ChronoZonedDateTime/isEqual checks if the two ZonedDateTimes
+    ; refer to the same Instant, regardless of timezone
+    (is (.isEqual (ZonedDateTime/of 2014 8 17 13 38 15 0 ZoneOffset/UTC)
+                  (decode-date "Sun, 17 Aug 2014 06:38:15 -0700")))
+    (is (.isEqual (ZonedDateTime/of 2014 6 30 21 05 56 0 ZoneOffset/UTC)
+                  (decode-date "Mon, 30 Jun 2014 21:05:56 +0000 (GMT+00:00)"))) ; putain Apple!
+    (is (.isEqual (ZonedDateTime/of 2014 8 15 10 50 33 0 ZoneOffset/UTC)
+                  (decode-date "Fri, 15 Aug 2014 10:50:33 +0000 (UTC)")))) ; LinkedIn emails error!
   (testing "parse"
     (is (= (list ["Subject" "éléonore est fsmf jsklfm sjfkl fjklf jkjékj jéé éjk lj mjd kfmjsf sdlmfj qsmflj fljm léjkél jékléjékl "])
            (parse h)))))

@@ -1,9 +1,9 @@
 (ns minimap.headers
   (:require [clojure.string :as string]
             [minimap.base64 :as base64]
-            [clj-time.format :as f]
-            [clj-time.core :as t]
-            [instaparse.core :as insta]))
+            [instaparse.core :as insta])
+  (:import (java.time ZonedDateTime)
+           (java.time.format DateTimeFormatter)))
 
 ; http://tools.ietf.org/html/rfc822#section-3
 (defn decode-quopri
@@ -65,15 +65,16 @@
       (throw (ex-info "Weird header" {:line headerline})))
     [(subs headerline 0 idx) (string/trim (subs headerline (inc idx)))]))
 
-(def time-formatters (map f/formatter ["EEE, dd MMM yyyy HH:mm:ss Z"
-                                       "EEE, dd MMM yyyy HH:mm:ss z"
-                                       "dd MMM yyyy HH:mm:ss Z"]))
+(def time-formatters
+  (map #(DateTimeFormatter/ofPattern %) ["EEE, dd MMM yyyy HH:mm:ss Z"
+                                         "EEE, dd MMM yyyy HH:mm:ss z"
+                                         "dd MMM yyyy HH:mm:ss Z"]))
 
 (defn decode-date
   "RFC822"
   [s]
   (let [clean (string/replace s #" \([^\)]+\)" "")
-        date (some #(try (f/parse % clean)
+        date (some #(try (ZonedDateTime/parse clean %)
                          (catch Exception e nil)) time-formatters)]
     date))
 

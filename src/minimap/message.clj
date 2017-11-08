@@ -1,15 +1,18 @@
 (ns minimap.message
   (:require [clojure.string :as string]
             [clojure.data.json :as json :refer [JSONWriter]]
-            [clj-time.format :as f]
-            [clj-time.coerce :as coerce]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io])
+  (:import (java.time ZonedDateTime)
+           (java.time.format DateTimeFormatter)))
+
+(def ^DateTimeFormatter rfc822-formatter
+  (DateTimeFormatter/ofPattern "EEE, dd MMM yyyy HH:mm:ss Z"))
 
 ;; add a custom encoder for org.joda.time.DateTime:
 (extend-protocol JSONWriter
-  org.joda.time.DateTime
+  ZonedDateTime
   (-write [d out]
-    (json/write (f/unparse (f/formatters :rfc822) d) out)))
+    (json/write (.format rfc822-formatter d) out)))
 
 (def common-headers #{"Subject" "From" "To" "Date" "Cc"})
 
@@ -65,7 +68,7 @@
   [msg-id]
   (when (stored? msg-id)
     (-> (retrieve-obj "messages" msg-id)
-        (update-in [:date] #(coerce/to-date (f/parse (f/formatters :rfc822) %)))
+        (update-in [:date] #(ZonedDateTime/parse % rfc822-formatter))
         (assoc :meta (retrieve-obj "meta" msg-id)))))
 
 (defn all-msg-ids
