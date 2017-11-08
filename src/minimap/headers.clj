@@ -1,6 +1,6 @@
 (ns minimap.headers
   (:require [clojure.string :as string]
-            [clojure.data.codec.base64 :as b64]
+            [byte-transforms :as bt]
             [clj-time.format :as f]
             [clj-time.core :as t]
             [instaparse.core :as insta]))
@@ -40,7 +40,7 @@
    (fn [[_ charset encoding data]]
      (case encoding
        ("B" "b") (-> (.getBytes data)
-                     b64/decode
+                     (bt/decode :base64)
                      (String. charset))
        ("Q" "q") (decode-quopri data charset)))))
 

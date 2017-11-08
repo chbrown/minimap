@@ -6,7 +6,7 @@
   :profiles {:dev {:dependencies [[midje "1.6.3"]]
                    :source-paths ["dev"]}}
   :dependencies [[org.clojure/clojure "1.6.0"]
-                 [org.clojure/data.codec "0.1.0"] ; FIXME switch to ring codec
+                 [byte-transforms "0.1.4"]
                  [cheshire "5.3.1"]
                  [clj-time "0.8.0"]
                  [instaparse "1.3.3"]
