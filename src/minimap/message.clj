@@ -1,15 +1,15 @@
 (ns minimap.message
   (:require [clojure.string :as string]
-            [cheshire.core :as j]
-            [cheshire.generate :as g]
+            [clojure.data.json :as json :refer [JSONWriter]]
             [clj-time.format :as f]
             [clj-time.coerce :as coerce]
             [clojure.java.io :as io]))
 
 ;; add a custom encoder for org.joda.time.DateTime:
-(g/add-encoder org.joda.time.DateTime
-               (fn [d ^com.fasterxml.jackson.core.JsonGenerator jsonGenerator]
-                 (.writeString jsonGenerator ^String (f/unparse (f/formatters :rfc822) d))))
+(extend-protocol JSONWriter
+  org.joda.time.DateTime
+  (-write [d out]
+    (json/write (f/unparse (f/formatters :rfc822) d) out)))
 
 (def common-headers #{"Subject" "From" "To" "Date" "Cc"})
 
@@ -35,20 +35,20 @@
 (defn store
   [msg]
   (spit (format "messages/%s.json" (:msg-id msg))
-        (j/generate-string msg {:pretty true}))
+        (json/write-str msg))
   msg)
 
 (defn store-meta
   [msg-id meta]
   (spit (format "meta/%s.json" msg-id)
-        (j/generate-string meta {:pretty true})))
+        (json/write-str meta)))
 
 (defn retrieve-obj
   [message-or-meta msg-id]
   (let [filename (format "%s/%s.json" message-or-meta msg-id)]
     (when (.exists (io/as-file filename))
       (-> (slurp filename)
-          (j/parse-string true)))))
+          (json/read-str :key-fn keyword)))))
 
 (defn update-meta
   [msg-id pred]
