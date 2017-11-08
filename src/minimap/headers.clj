@@ -6,8 +6,6 @@
             [instaparse.core :as insta]))
 
 ; http://tools.ietf.org/html/rfc822#section-3
-
-
 (defn decode-quopri
   "Decodes quoted-printable"
   [encoded charset]
@@ -37,36 +35,33 @@
   "Decodes non-ascii headers values according to RFC2047. There can be several encoded words in a single string."
   [possibly-encoded]
   (string/replace
-    possibly-encoded
-    #"=\?([^?]+)\?([BbQq])\?([^\? ]*)\?="
-    (fn [[_ charset encoding data]]
-      (case encoding
-        ("B" "b") (-> (.getBytes data)
-	                b64/decode
-	                (String. charset))
-        ("Q" "q") (decode-quopri data charset)))))
+   possibly-encoded
+   #"=\?([^?]+)\?([BbQq])\?([^\? ]*)\?="
+   (fn [[_ charset encoding data]]
+     (case encoding
+       ("B" "b") (-> (.getBytes data)
+                     b64/decode
+                     (String. charset))
+       ("Q" "q") (decode-quopri data charset)))))
 
 (defn unfold
   "Unfold headers from raw text. Returns a list of header lines"
   [raw]
   {:pre [string? raw]}
   (-> (loop [[line & ls] (clojure.string/split raw #"\r\n")
-	           [current & cs :as acc] nil]
-  	    (cond
+             [current & cs :as acc] nil]
+        (cond
           ; empty line => end of headers. if line is nil, they forgot the empty line but that's OK.
-          (or (= "" line) (nil? line))
-          acc
-
+          (or (= "" line) (nil? line)) acc
           ; first char is space or tab, this line is a folding continuation
-  	      (#{\space \tab} (first line))
-  	      (recur ls (cons (str current " " (string/trim line)) cs))
-
-  	      ; new header field + value
-          :else
-  	      (recur ls (cons line acc))))
+          (#{\space \tab} (first line))
+          (recur ls (cons (str current " " (string/trim line)) cs))
+          ; new header field + value
+          :else (recur ls (cons line acc))))
       reverse))
 
-(defn namevalue [headerline]
+(defn namevalue
+  [headerline]
   (let [idx (.indexOf headerline ":")]
     (when (= -1 idx)
       (throw (ex-info "Weird header" {:line headerline})))
@@ -76,8 +71,9 @@
                                        "EEE, dd MMM yyyy HH:mm:ss z"
                                        "dd MMM yyyy HH:mm:ss Z"]))
 
-(defn decode-date [s]
+(defn decode-date
   "RFC822"
+  [s]
   (let [clean (string/replace s #" \([^\)]+\)" "")
         date (some #(try (f/parse % clean)
                          (catch Exception e nil)) time-formatters)]
@@ -85,7 +81,7 @@
 
 ; https://www.cs.tut.fi/~jkorpela/rfc/822addr.html
 (def address-parser (insta/parser
-"S = ADRESS (<white> <','> <white> ADRESS)*
+                     "S = ADRESS (<white> <','> <white> ADRESS)*
 
 ADRESS : (name? <white> <'<'> email <'>'>)
        | email
@@ -107,27 +103,28 @@ email = ATOM '@' ATOM ('.' ATOM)*
 white = #' *'
 "))
 
-(defn decode-address [raw]
+(defn decode-address
+  [raw]
   (let [tree (address-parser raw)]
     (if (vector? tree)
       ; successful parse
       #_(prn tree)
       (map (fn [address] (into {} (for [[tag & more] (rest address)]
-                                  [tag (apply str more)])))
+                                    [tag (apply str more)])))
            (rest tree)) ; first item is :S
       (prn "ERROR" raw))))
 
-(defn decode-structured [[name value]]
+(defn decode-structured
   "Decodes structured fields such as Date"
+  [[name value]]
   (let [rules {"Date" decode-date
                "From" decode-address
                "To" decode-address}]
     [name ((or (rules name) identity) value)]))
 
-(defn parse [raw]
+(defn parse
+  [raw]
   (->> (unfold raw)
        (map namevalue)
        (map (fn [[n v]] [n (decode-rfc2047 v)]))
-       (map decode-structured)
-       ))
-
+       (map decode-structured)))

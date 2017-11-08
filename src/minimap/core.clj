@@ -56,7 +56,8 @@
 
 ;; quick test function
 
-(defn go [pwd]
+(defn go
+  [pwd]
   (let [session (login :gmail "a@lxbrun.com" pwd)
         msgs (->> (search session {:gmail "after:2014/9/1" :max 10})
                   (map #(fetch session :plain-or-html %)))

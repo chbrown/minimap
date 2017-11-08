@@ -5,7 +5,8 @@
   (:import [java.io BufferedWriter BufferedReader OutputStreamWriter InputStreamReader]
            [javax.net.ssl SSLSocket SSLSocketFactory]))
 
-(defn log [author msg]
+(defn log
+  [author msg]
   (spit "imap.log"
         (format "%s %s\n" (if (= :server author) "<<" ">>") msg)
         :append true))
@@ -27,9 +28,9 @@
             id (format "a%05d" idx)
             cmd (format "%s %s\r\n" id command)
             response (fn [resp error] (dosync (alter session-ref
-                                               assoc :idx idx
+                                                     assoc :idx idx
                                                      :last-error error))
-                                      resp)]
+                       resp)]
         (.write w cmd 0 (count cmd))
         (log :client cmd)
         (.flush w)
@@ -76,18 +77,18 @@
               :else
               (recur (.readLine r) (conj (pop resp) (conj (last resp) line)))))))
 
-        (future nil)))) ; error pass-through: leave session untouched
+      (future nil)))) ; error pass-through: leave session untouched
 
 (defn search
   "Returns a list of uids (strings)"
   [sess {:keys [gmail] :as query}]
   (let [_    (deref (do-command sess "select \"[Gmail]/All Mail\""))
-        resp (deref (do-command sess (if gmail (format "SEARCH X-GM-RAW \"%s\"" gmail)
-                                                       "SEARCH UNSEEN")))]
-        (when resp
-          (drop 2 (-> resp first first (clojure.string/split #" "))))))
+        resp (deref (do-command sess (if gmail (format "SEARCH X-GM-RAW \"%s\"" gmail) "SEARCH UNSEEN")))]
+    (when resp
+      (drop 2 (-> resp first first (clojure.string/split #" "))))))
 
-(defn fetch-headers [sess uids]
+(defn fetch-headers
+  [sess uids]
   (let [gmail-ext (if (:gmail @sess) "X-GM-MSGID X-GM-THRID " "")
         resp (deref (do-command sess (format "fetch %s (body.peek[header] %sFLAGS BODYSTRUCTURE)"
                                              (clojure.string/join "," uids) gmail-ext)))]
@@ -114,8 +115,8 @@
   :gmail automatically uses Gmail IMAP extensions for the session."
   [{:keys [server port] :as arg}]
   (let [[server port] (case arg :gmail ["imap.gmail.com" 993]
-                                :outlook ["imap-mail.outlook.com" 993]
-                                [server port])
+                            :outlook ["imap-mail.outlook.com" 993]
+                            [server port])
         sf (SSLSocketFactory/getDefault)
         sock (doto (.createSocket sf server port)
                    .startHandshake)
@@ -125,12 +126,14 @@
         _ (.readLine r)]
     sess))
 
-(defn login [sess login pwd]
+(defn login
+  [sess login pwd]
   (let [login (format "login %s %s" login pwd)
         resp (deref (do-command sess login))]
     (when resp sess)))
 
-(defn authenticate [sess username token]
+(defn authenticate
+  [sess username token]
   (let [auth (.getBytes (format "user=%s^auth=Bearer %s^^" username token))
         idx [(+ 5 (count username)) (- (count auth) 2) (- (count auth) 1)]
         _ (doall (map #(aset-byte auth % 1) idx))
@@ -139,5 +142,6 @@
         resp (deref (do-command sess cmd))]
     (when resp sess)))
 
-(defn logout [sess]
+(defn logout
+  [sess]
   (do-command sess "logout"))

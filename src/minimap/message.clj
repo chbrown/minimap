@@ -9,8 +9,8 @@
 
 ;; add a custom encoder for org.joda.time.DateTime:
 (g/add-encoder org.joda.time.DateTime
-             (fn [d jsonGenerator]
-               (.writeString jsonGenerator (f/unparse (f/formatters :rfc822) d))))
+               (fn [d jsonGenerator]
+                 (.writeString jsonGenerator (f/unparse (f/formatters :rfc822) d))))
 
 (def common-headers #{"Subject" "From" "To" "Date" "Cc"})
 
@@ -33,56 +33,66 @@
       (?> ((set (:flags msg)) "\\Flagged") assoc :flagged true)
       (?> ((set (:flags msg)) "\\Answered") assoc :answered true)))
 
-(defn store [msg]
+(defn store
+  [msg]
   (spit (format "messages/%s.json" (:msg-id msg))
         (j/generate-string msg {:pretty true}))
   msg)
 
-(defn store-meta [msg-id meta]
+(defn store-meta
+  [msg-id meta]
   (spit (format "meta/%s.json" msg-id)
         (j/generate-string meta {:pretty true})))
 
-(defn retrieve-obj [message-or-meta msg-id]
+(defn retrieve-obj
+  [message-or-meta msg-id]
   (let [filename (format "%s/%s.json" message-or-meta msg-id)]
     (when (.exists (io/as-file filename))
       (-> (slurp filename)
           (j/parse-string true)))))
 
-(defn update-meta [msg-id pred]
+(defn update-meta
+  [msg-id pred]
   (->> (retrieve-obj "meta" msg-id)
        (merge {:msg-id msg-id})
        pred
        (store-meta msg-id)))
 
-(defn stored? [msg-id]
+(defn stored?
+  [msg-id]
   (.exists (io/as-file (format "messages/%s.json" msg-id))))
 
-(defn retrieve [msg-id]
+(defn retrieve
+  [msg-id]
   (when (stored? msg-id)
     (-> (retrieve-obj "messages" msg-id)
         (update-in [:date] #(coerce/to-date (f/parse (f/formatters :rfc822) %)))
         (assoc :meta (retrieve-obj "meta" msg-id)))))
 
-(defn all-msg-ids []
+(defn all-msg-ids
+  []
   (->> (file-seq (io/file "messages"))
-                     (map #(.getName %))
-                     (map #(re-find #"(\d+)\.json" %))
-                     (filter identity)
-                     (map second)))
+       (map #(.getName %))
+       (map #(re-find #"(\d+)\.json" %))
+       (filter identity)
+       (map second)))
 
-(defn random []
+(defn random
+  []
   (-> (all-msg-ids)
       rand-nth
       retrieve))
 
-(defn all-meta-ids []
+(defn all-meta-ids
+  []
   (->> (file-seq (io/file "meta"))
        (map #(.getName %))
        (map #(re-find #"(\d+)\.json" %))
        (filter identity)
        (map second)))
 
-(defn all-meta []
+(defn all-meta
+  []
   (map #(into {:msg-id %} (retrieve-obj "meta" %)) (all-meta-ids)))
 
 (defn lines
@@ -93,5 +103,3 @@
       (if (= -1 idx)
         (conj acc [start (count text)])
         (recur (.indexOf text "\n" (inc idx)) (inc idx) (conj acc [start idx]))))))
-
-

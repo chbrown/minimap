@@ -30,7 +30,7 @@
     (is (= '("name:long value")
            (unfold "name:long\r\n value\r\n")))
     (is (= '("name:long value", "foo:bar")
-   	       (unfold "name:long\r\n value\r\nfoo:bar"))))
+           (unfold "name:long\r\n value\r\nfoo:bar"))))
   (testing "namevalue"
     (is (= ["foo" "bar"]
            (namevalue "foo: bar"))))
