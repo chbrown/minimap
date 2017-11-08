@@ -1,6 +1,6 @@
 (ns minimap.headers
   (:require [clojure.string :as string]
-            [byte-transforms :as bt]
+            [minimap.base64 :as base64]
             [clj-time.format :as f]
             [clj-time.core :as t]
             [instaparse.core :as insta]))
@@ -8,7 +8,7 @@
 ; http://tools.ietf.org/html/rfc822#section-3
 (defn decode-quopri
   "Decodes quoted-printable"
-  [encoded charset]
+  [^String encoded ^String charset]
   (let [source (.getBytes encoded)
         c (count source)
         _ (assert (= c (count encoded))) ; since we should only have ascii
@@ -39,9 +39,7 @@
    #"=\?([^?]+)\?([BbQq])\?([^\? ]*)\?="
    (fn [[_ charset encoding data]]
      (case encoding
-       ("B" "b") (-> (.getBytes data)
-                     (bt/decode :base64)
-                     (String. charset))
+       ("B" "b") (base64/decode-string data charset)
        ("Q" "q") (decode-quopri data charset)))))
 
 (defn unfold
@@ -61,7 +59,7 @@
       reverse))
 
 (defn namevalue
-  [headerline]
+  [^String headerline]
   (let [idx (.indexOf headerline ":")]
     (when (= -1 idx)
       (throw (ex-info "Weird header" {:line headerline})))

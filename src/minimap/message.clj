@@ -9,8 +9,8 @@
 
 ;; add a custom encoder for org.joda.time.DateTime:
 (g/add-encoder org.joda.time.DateTime
-               (fn [d jsonGenerator]
-                 (.writeString jsonGenerator (f/unparse (f/formatters :rfc822) d))))
+               (fn [d ^com.fasterxml.jackson.core.JsonGenerator jsonGenerator]
+                 (.writeString jsonGenerator ^String (f/unparse (f/formatters :rfc822) d))))
 
 (def common-headers #{"Subject" "From" "To" "Date" "Cc"})
 
@@ -72,7 +72,7 @@
 (defn all-msg-ids
   []
   (->> (file-seq (io/file "messages"))
-       (map #(.getName %))
+       (map #(.getName ^java.io.File %))
        (map #(re-find #"(\d+)\.json" %))
        (filter identity)
        (map second)))
@@ -86,7 +86,7 @@
 (defn all-meta-ids
   []
   (->> (file-seq (io/file "meta"))
-       (map #(.getName %))
+       (map #(.getName ^java.io.File %))
        (map #(re-find #"(\d+)\.json" %))
        (filter identity)
        (map second)))
@@ -98,7 +98,7 @@
 (defn lines
   "Returns a sequence of [start end] for each line in the plain text body, excluding the \n"
   [msg]
-  (when-let [text (:plain msg)]
+  (when-let [^String text (:plain msg)]
     (loop [idx (.indexOf text "\n" 0) start 0 acc []]
       (if (= -1 idx)
         (conj acc [start (count text)])

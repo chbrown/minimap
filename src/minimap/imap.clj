@@ -1,7 +1,7 @@
 (ns minimap.imap
   (:require [minimap.parse :as parse]
             [minimap.headers :as h]
-            [ring.util.codec :as codec])
+            [minimap.base64 :as base64])
   (:import [java.io BufferedWriter BufferedReader OutputStreamWriter InputStreamReader]
            [javax.net.ssl SSLSocket SSLSocketFactory]))
 
@@ -22,7 +22,7 @@
 
   Modifies the value of the session referenced by session-ref."
   [session-ref command]
-  (let [{:keys [w r idx last-error] :as session} (deref session-ref)]
+  (let [{:keys [^BufferedWriter w ^BufferedReader r idx last-error] :as session} (deref session-ref)]
     (if-not last-error
       (let [idx (inc idx)
             id (format "a%05d" idx)
@@ -97,14 +97,14 @@
 (defn fetch-body-part
   "Fetch only the given part specified by {:path :content-type :charset} from the body.
   Returns a decoded string for now, since we only fetch texts."
-  [sess uid {:keys [path content-type charset encoding] :as part}]
+  [sess uid {:keys [path content-type ^String charset encoding] :as part}]
   (let [resp (deref (do-command sess (format "fetch %s body.peek[%s]" uid path)))
-        data (-> (parse/parse-fetch (first resp))
-                 :body
-                 (get path))
+        ^bytes data (-> (parse/parse-fetch (first resp))
+                        :body
+                        (get path))
         charset (or charset "utf-8") ; some bodystructures forget the charset
         text (case encoding
-               "base64" (String. (codec/base64-decode (String. data)) charset)
+               "base64" (base64/decode-string (String. data))
                "quoted-printable" (h/decode-quopri (String. data) charset)
                (String. (.getBytes (String. data)) charset))]
     text))
@@ -114,11 +114,12 @@
   Arg can be either :gmail, :outlook, or a map with :server and :port.
   :gmail automatically uses Gmail IMAP extensions for the session."
   [{:keys [server port] :as arg}]
-  (let [[server port] (case arg :gmail ["imap.gmail.com" 993]
-                            :outlook ["imap-mail.outlook.com" 993]
-                            [server port])
+  (let [[^String server ^int port] (case arg
+                                     :gmail ["imap.gmail.com" 993]
+                                     :outlook ["imap-mail.outlook.com" 993]
+                                     [server port])
         sf (SSLSocketFactory/getDefault)
-        sock (doto (.createSocket sf server port)
+        sock (doto ^SSLSocket (.createSocket sf server port)
                    .startHandshake)
         w (BufferedWriter. (OutputStreamWriter. (.getOutputStream sock)))
         r (BufferedReader. (InputStreamReader. (.getInputStream sock) "US-ASCII"))
@@ -137,7 +138,7 @@
   (let [auth (.getBytes (format "user=%s^auth=Bearer %s^^" username token))
         idx [(+ 5 (count username)) (- (count auth) 2) (- (count auth) 1)]
         _ (doall (map #(aset-byte auth % 1) idx))
-        enc (String. (codec/base64-encode auth))
+        enc (String. (base64/encode-bytes auth))
         cmd (format "authenticate XOAUTH2 %s" enc)
         resp (deref (do-command sess cmd))]
     (when resp sess)))
